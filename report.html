@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Concrete Compressive Strength — ML Report</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --terra:   #B85042;
+    --terra-dk:#8B2E22;
+    --terra-lt:#F0D5D1;
+    --sand:    #E7E8D1;
+    --sage:    #A7BEAE;
+    --ink:     #1C1C1C;
+    --ink2:    #3A3A3A;
+    --mute:    #8A8A8A;
+    --cream:   #FAF9F6;
+    --white:   #FFFFFF;
+    --navy:    #0D1B4B;
+    --blue:    #1565C0;
+    --sky:     #42A5F5;
+    --code-bg: #F0F4FF;
+    --why-bg:  #E8F5E9;
+    --why-bdr: #2E7D32;
+    --res-bg:  #E3F2FD;
+    --res-bdr: #1565C0;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── DOCUMENT VIEWER BACKGROUND (Screen Only) ── */
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: #525659;
+    color: var(--ink);
+    line-height: 1.6;
+    font-size: 14px;
+    display: flex;
+    justify-content: center;
+    padding: 30px 20px;
+  }
+
+  /* ── CONTINUOUS DOCUMENT CONTAINER ── */
+  .document {
+    background: var(--cream);
+    width: 100%;
+    max-width: 210mm; /* A4 Width */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    padding: 20mm;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    background: var(--ink);
+    margin: -20mm -20mm 20px -20mm;
+    padding: 20mm 20mm 15mm 20mm;
+    position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; right: 0; top: 0;
+    width: 40%; height: 100%;
+    background: var(--terra);
+    clip-path: polygon(15% 0, 100% 0, 100% 100%, 0% 100%);
+    opacity: 0.15;
+  }
+  .hero-tag {
+    display: inline-block;
+    background: var(--terra); color: var(--white);
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase;
+    padding: 4px 12px; border-radius: 2px;
+    margin-bottom: 15px;
+  }
+  .hero h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 42px;
+    color: var(--white); line-height: 1.1;
+    letter-spacing: -0.5px;
+  }
+  .hero h1 span { color: var(--terra); }
+  .hero-sub {
+    font-size: 15px; color: #9E9E9E;
+    margin-top: 12px; font-weight: 300;
+  }
+  .hero-meta {
+    display: flex; gap: 24px; margin-top: 24px;
+    flex-wrap: wrap;
+  }
+  .hero-meta-item .label {
+    font-size: 9px; color: var(--mute);
+    text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;
+  }
+  .hero-meta-item .val {
+    font-size: 13px; color: var(--white); margin-top: 2px;
+  }
+
+  /* ── KPI STRIP ── */
+  .kpi-strip {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    background: var(--terra);
+    margin: 0 -20mm 25px -20mm;
+  }
+  .kpi {
+    padding: 15px 10px; border-right: 1px solid rgba(255,255,255,0.15);
+    text-align: center;
+  }
+  .kpi:last-child { border-right: none; }
+  .kpi .val {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px; color: var(--white); display: block;
+  }
+  .kpi .lbl {
+    font-size: 10px; color: rgba(255,255,255,0.7);
+    font-weight: 500; text-transform: uppercase;
+    letter-spacing: 1px; margin-top: 2px; display: block;
+  }
+
+  /* ── SECTION CONTAINER ── */
+  .section {
+    padding: 15px 0;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #E8E8E3;
+  }
+  .section:last-of-type { border-bottom: none; }
+
+  .section-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 12px;
+  }
+  .step-badge {
+    background: var(--terra); color: var(--white);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; font-weight: 500;
+    padding: 3px 8px; border-radius: 2px;
+    flex-shrink: 0; letter-spacing: 0.5px;
+  }
+  .step-badge.final { background: var(--navy); }
+  .section h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px; color: var(--ink);
+    letter-spacing: -0.5px; line-height: 1.2;
+  }
+  .section h3 {
+    font-size: 13px; font-weight: 700;
+    color: var(--navy); margin: 16px 0 8px;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .section p { color: var(--ink2); margin-bottom: 10px; }
+
+  /* ── REUSABLE BLOCKS (Kept together during print) ── */
+  .code-block {
+    background: var(--code-bg);
+    border: 1px solid #C5CAE9;
+    border-left: 4px solid var(--navy);
+    border-radius: 0 4px 4px 0;
+    padding: 12px 16px;
+    margin: 12px 0;
+  }
+  .code-block pre {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; color: #1A237E;
+    line-height: 1.6; white-space: pre-wrap;
+  }
+  .code-block pre .comment { color: #90A4AE; }
+  .code-block pre .kw { color: var(--terra-dk); font-weight: 500; }
+  .code-block pre .str { color: #2E7D32; }
+
+  .why-box { background: var(--why-bg); border: 1px solid #A5D6A7; border-left: 4px solid var(--why-bdr); border-radius: 0 4px 4px 0; padding: 10px 14px; margin: 12px 0; }
+  .why-box .label { font-size: 10px; font-weight: 700; color: var(--why-bdr); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; }
+  .why-box p { color: #1B5E20; margin: 0; font-size: 13px; }
+
+  .result-box { background: var(--res-bg); border: 1px solid #90CAF9; border-left: 4px solid var(--res-bdr); border-radius: 0 4px 4px 0; padding: 10px 14px; margin: 12px 0; }
+  .result-box .label { font-size: 10px; font-weight: 700; color: var(--res-bdr); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; }
+  .result-box p { color: #0D47A1; margin: 0; font-size: 13px; }
+
+  .info-box { background: #FFF8E1; border: 1px solid #FFE082; border-left: 4px solid #F9A825; border-radius: 0 4px 4px 0; padding: 10px 14px; margin: 12px 0; font-size: 13px; color: #4A3800; }
+
+  .formula { background: var(--res-bg); border: 2px solid var(--blue); border-radius: 4px; padding: 10px; text-align: center; margin: 12px 0; font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; color: var(--navy); }
+
+  /* ── TABLES ── */
+  .tbl-wrap { margin: 12px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead { display: table-header-group; } /* Repeats header if table splits */
+  thead tr { background: var(--navy); }
+  thead th { color: var(--white); font-weight: 600; padding: 8px 10px; text-align: center; font-size: 11px; letter-spacing: 0.5px; }
+  tbody tr:nth-child(even) { background: #F5F7FA; }
+  tbody tr:nth-child(odd)  { background: var(--white); }
+  tbody tr.highlight { background: #E3F2FD !important; font-weight: 600; }
+  tbody tr.target { background: #FFF9C4 !important; }
+  tbody td { padding: 7px 10px; color: var(--ink2); border-bottom: 1px solid #ECEFF1; text-align: center; vertical-align: middle; }
+  tbody td:first-child { font-weight: 600; color: var(--ink); }
+  tbody td.left { text-align: left; }
+
+  /* ── GRIDS AND CARDS ── */
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin: 12px 0; border: 1px solid #E0E0E0; border-radius: 4px; overflow: hidden; }
+  .compare-wrong { background: #FFEBEE; padding: 12px 16px; }
+  .compare-right { background: #E8F5E9; padding: 12px 16px; }
+  .compare-wrong h4 { color: #C62828; font-size: 12px; margin-bottom: 6px; }
+  .compare-right h4 { color: #2E7D32; font-size: 12px; margin-bottom: 6px; }
+  .compare-wrong li, .compare-right li { font-size: 12px; color: var(--ink2); margin-left: 14px; margin-bottom: 2px; }
+
+  .model-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 14px 0; }
+  .model-card { border-radius: 6px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .model-card .card-header { padding: 10px 12px; color: var(--white); }
+  .model-card .card-header h4 { font-size: 13px; font-weight: 700; }
+  .model-card .card-header .role { font-size: 10px; color: rgba(255,255,255,0.75); margin-top: 2px; font-style: italic; }
+  .model-card .card-body { background: var(--white); padding: 10px 12px; }
+  .model-card .eqn { font-family: 'DM Mono', monospace; font-size: 10px; padding: 6px 8px; border-radius: 4px; margin-bottom: 8px; text-align: center; font-weight: 500; }
+  .model-card ul { list-style: none; }
+  .model-card li { font-size: 11px; color: var(--ink2); padding: 2px 0 2px 12px; position: relative; }
+  .model-card li::before { content: '▸'; position: absolute; left: 0; color: var(--terra); }
+  .model-card .r2-badge { margin-top: 8px; padding: 6px; text-align: center; color: var(--white); font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; border-radius: 4px; }
+  .col-grey  { background: #546E7A; } .col-terra { background: var(--terra); } .col-sage  { background: #5C8A6E; }
+  .eqn-grey  { background: #ECEFF1; color: #546E7A; } .eqn-terra { background: #FAEAE8; color: var(--terra); } .eqn-sage  { background: #EEF4F1; color: #5C8A6E; }
+
+  .conc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+  .conc-card { background: var(--white); border: 1px solid #E0E0E0; border-top: 3px solid var(--terra); border-radius: 4px; padding: 14px 16px; }
+  .conc-card .num { font-family: 'DM Serif Display', serif; font-size: 24px; color: var(--terra-lt); line-height: 1; margin-bottom: 4px; }
+  .conc-card h4 { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+  .conc-card p { font-size: 12px; color: var(--ink2); margin: 0; }
+
+  .fix-crit { background: #FFEBEE !important; } .fix-imp  { background: #FFF8E1 !important; } .fix-min  { background: #E8F5E9 !important; }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--ink); color: var(--mute);
+    text-align: center; padding: 20px;
+    font-size: 11px; margin: 20px -20mm -20mm -20mm;
+  }
+  footer strong { color: var(--terra); }
+
+  /* ── SEAMLESS PRINT & PAGINATION RULES ── */
+  @media print {
+    body { background: none; padding: 0; display: block; }
+    .document { 
+      max-width: none; width: auto; 
+      padding: 0; margin: 0; 
+      box-shadow: none; background: transparent; 
+    }
+    
+    /* Let the browser handle standard A4 margins naturally */
+    @page { size: A4 portrait; margin: 15mm; }
+    
+    /* Footer formatting for print */
+    footer { margin: 20px 0 0 0; border-radius: 4px; }
+    .hero { margin: 0 0 20px 0; border-radius: 4px; padding: 15mm; }
+    .kpi-strip { margin: 0 0 25px 0; border-radius: 4px; }
+
+    /* MAGIC HAPPENS HERE: Prevent awkward page breaks */
+    h2, h3, h4, .section-header { 
+      page-break-after: avoid; 
+      break-after: avoid; 
+    }
+    .code-block, .why-box, .result-box, .info-box, .formula, .model-card, .conc-card, table, .compare-grid {
+      page-break-inside: avoid; 
+      break-inside: avoid; 
+    }
+  }
+</style>
+</head>
+<body>
+
+  <div class="document">
+    
+    <header class="hero">
+      <div class="hero-tag">Final Project Report · ME644</div>
+      <h1>Prediction of <span>Concrete</span><br>Compressive Strength<br>Using Machine Learning</h1>
+      <p class="hero-sub">12-Step Pipeline — Detailed Explanation with Data &amp; Conclusions</p>
+      <div class="hero-meta">
+        <div class="hero-meta-item">
+          <div class="label">Name</div>
+          <div class="val">Kartik Singh</div>
+        </div>
+        <div class="hero-meta-item">
+          <div class="label">Department</div>
+          <div class="val">Civil Engineering, IIT Kanpur</div>
+        </div>
+        <div class="hero-meta-item">
+          <div class="label">Dataset</div>
+          <div class="val">UCI Concrete Strength (Yeh, 1998)</div>
+        </div>
+        <div class="hero-meta-item">
+          <div class="label">Date</div>
+          <div class="val">April 2026</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="kpi-strip">
+      <div class="kpi"><span class="val">3,030</span><span class="lbl">Raw Samples</span></div>
+      <div class="kpi"><span class="val">2,891</span><span class="lbl">After Cleaning</span></div>
+      <div class="kpi"><span class="val">9</span><span class="lbl">Features Used</span></div>
+      <div class="kpi"><span class="val">R² 0.942</span><span class="lbl">Best Model</span></div>
+      <div class="kpi"><span class="val">3.95 MPa</span><span class="lbl">Best RMSE</span></div>
+    </div>
+
+    <section class="section" id="step1">
+      <div class="section-header">
+        <span class="step-badge">Step 01</span>
+        <h2>Install Dependencies &amp; Import Libraries</h2>
+      </div>
+      <p>All required Python libraries were installed and imported at the start of the notebook. The libraries cover data manipulation, visualisation, statistical operations, and machine learning.</p>
+      <div class="code-block"><pre><span class="kw">import</span> pandas <span class="kw">as</span> pd          <span class="comment"># data loading and manipulation</span>
+<span class="kw">import</span> numpy <span class="kw">as</span> np           <span class="comment"># numerical computation</span>
+<span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt  <span class="comment"># visualisation</span>
+<span class="kw">import</span> seaborn <span class="kw">as</span> sns        <span class="comment"># statistical visualisation</span>
+<span class="kw">from</span> scipy.stats <span class="kw">import</span> zscore   <span class="comment"># outlier detection</span>
+<span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split
+<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> MinMaxScaler
+<span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> LinearRegression
+<span class="kw">from</span> sklearn.ensemble <span class="kw">import</span> RandomForestRegressor
+<span class="kw">from</span> sklearn.svm <span class="kw">import</span> SVR
+<span class="kw">from</span> sklearn.metrics <span class="kw">import</span> mean_squared_error, mean_absolute_error, r2_score</pre></div>
+      <div class="why-box">
+        <div class="label">Why This Step?</div>
+        <p>Every library serves a distinct purpose. pandas handles tabular data. numpy provides vectorised operations 100× faster than plain Python. scikit-learn gives production-grade ML. Without these imports, every subsequent step is impossible.</p>
+      </div>
+    </section>
+
+    <section class="section" id="step2">
+      <div class="section-header">
+        <span class="step-badge">Step 02</span>
+        <h2>Load &amp; Inspect the Dataset</h2>
+      </div>
+      <p>The dataset was loaded from CSV using pandas. Column names were standardised by stripping whitespace and replacing verbose headers with short identifiers.</p>
+      <div class="code-block"><pre>df = pd.read_csv(<span class="str">"Concrete_Data_final.csv"</span>, skipinitialspace=<span class="kw">True</span>)
+df.columns = df.columns.str.strip()
+df.columns = [<span class="str">"Cement"</span>,<span class="str">"BFS"</span>,<span class="str">"FlyAsh"</span>,<span class="str">"Water"</span>,<span class="str">"SP"</span>,
+              <span class="str">"CoarseAgg"</span>,<span class="str">"FineAgg"</span>,<span class="str">"Age"</span>,<span class="str">"Strength"</span>]
+<span class="kw">print</span>(df.shape)   <span class="comment"># (3030, 9)</span>
+df.describe()     <span class="comment"># full descriptive statistics</span></pre></div>
+      <h3>Descriptive Statistics from Your Dataset</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Feature</th><th>Mean</th><th>Std Dev</th><th>Min</th><th>Max</th><th>Unit</th></tr></thead>
+          <tbody>
+            <tr><td>Cement</td><td>281.04</td><td>103.41</td><td>97.60</td><td>542.50</td><td>kg/m³</td></tr>
+            <tr><td>BFS (Slag)</td><td>73.36</td><td>85.88</td><td>0.00</td><td>363.60</td><td>kg/m³</td></tr>
+            <tr><td>Fly Ash</td><td>55.04</td><td>64.12</td><td>0.00</td><td>201.60</td><td>kg/m³</td></tr>
+            <tr><td>Water</td><td>181.72</td><td>21.71</td><td>120.80</td><td>248.50</td><td>kg/m³</td></tr>
+            <tr><td>Superplasticizer</td><td>6.41</td><td>5.92</td><td>0.00</td><td>33.00</td><td>kg/m³</td></tr>
+            <tr><td>Coarse Aggregate</td><td>972.98</td><td>77.56</td><td>798.90</td><td>1145.00</td><td>kg/m³</td></tr>
+            <tr><td>Fine Aggregate</td><td>772.85</td><td>80.25</td><td>588.90</td><td>993.90</td><td>kg/m³</td></tr>
+            <tr><td>Age</td><td>45.41</td><td>61.33</td><td>0.00</td><td>368.60</td><td>days</td></tr>
+            <tr class="target"><td>Strength ◀ Target</td><td>35.78</td><td>16.75</td><td>2.33</td><td>84.50</td><td>MPa</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="why-box">
+        <div class="label">Why This Step?</div>
+        <p>Without understanding column names, data types, and ranges, every downstream step could use wrong features or misinterpret values. Column renaming ensures all scripts reference the same identifiers, preventing KeyError bugs.</p>
+      </div>
+    </section>
+
+    <section class="section" id="step3">
+      <div class="section-header">
+        <span class="step-badge">Step 03</span>
+        <h2>Exploratory Data Analysis (EDA)</h2>
+      </div>
+      <p>Visual and statistical exploration of all features was performed to understand distributions, detect skewness, find correlations, and observe physical relationships.</p>
+      <h3>Analysis Highlights</h3>
+      <p><strong>1. Strength Distribution:</strong> A right-skewed distribution (skewness ≈ 0.82) is observed. Most values fall in the 20–50 MPa range. Mean (35.78) > Median (34.30). This signals a linear model will struggle at both extremes.</p>
+      <p><strong>2. Correlation:</strong> Cement has the strongest positive correlation with Strength (+0.50). Water is negatively correlated (−0.29). Water and Superplasticizer are strongly negatively correlated (−0.66) — consistent with their workability roles.</p>
+      <p><strong>3. Strength vs Age:</strong> A clear logarithmic growth pattern appears — strength rises steeply in the first 28 days then levels off, exactly as predicted by concrete hydration theory.</p>
+    </section>
+
+    <section class="section" id="step4">
+      <div class="section-header">
+        <span class="step-badge">Step 04</span>
+        <h2>Handle Missing Values &amp; Remove Duplicates</h2>
+      </div>
+      <div class="code-block"><pre><span class="comment"># Median imputation — robust to outliers</span>
+df.fillna(df.median(numeric_only=<span class="kw">True</span>), inplace=<span class="kw">True</span>)
+
+<span class="comment"># Remove exact duplicate rows</span>
+before = len(df)
+df.drop_duplicates(inplace=<span class="kw">True</span>)
+df.reset_index(drop=<span class="kw">True</span>, inplace=<span class="kw">True</span>)
+<span class="kw">print</span>(f<span class="str">"Duplicates removed: {before - len(df)}"</span>)  <span class="comment"># → 25</span>
+<span class="comment"># Dataset now: 3,005 unique rows</span></pre></div>
+      <div class="why-box">
+        <div class="label">Why This Step?</div>
+        <p>Duplicate rows are a form of data leakage — if the same mix appears in both training and test sets, the model looks better than it truly is. Removing 25 duplicates ensures the test set reflects genuine generalisation.</p>
+      </div>
+    </section>
+
+    <section class="section" id="step5">
+      <div class="section-header">
+        <span class="step-badge">Step 05</span>
+        <h2>Outlier Detection &amp; Removal (Z-Score)</h2>
+      </div>
+      <p>Z-score based outlier detection was applied to all 8 input features. Any sample where at least one feature had |Z| > 3.5 was removed as physically implausible.</p>
+      <div class="code-block"><pre><span class="kw">from</span> scipy.stats <span class="kw">import</span> zscore
+
+feat_cols = [<span class="str">"Cement"</span>,<span class="str">"BFS"</span>,<span class="str">"FlyAsh"</span>,<span class="str">"Water"</span>,<span class="str">"SP"</span>,<span class="str">"CoarseAgg"</span>,<span class="str">"FineAgg"</span>,<span class="str">"Age"</span>]
+z_scores = np.abs(zscore(df[feat_cols]))
+
+<span class="comment"># Keep only rows where ALL features have |Z| &lt; 3.5</span>
+df = df[(z_scores &lt; 3.5).all(axis=1)].reset_index(drop=<span class="kw">True</span>)
+<span class="comment"># Clean dataset: 2,891 rows (114 outliers removed)</span></pre></div>
+      <div class="info-box"><strong>Why threshold = 3.5?</strong> We chose 3.5 to be conservative — removing only near-certain measurement errors or physically impossible mixes, while preserving valid high-strength designs.</div>
+    </section>
+
+    <section class="section" id="step6">
+      <div class="section-header">
+        <span class="step-badge">Step 06</span>
+        <h2>Feature Engineering — Water-to-Binder Ratio</h2>
+      </div>
+      <div class="formula">W/B = Water / (Cement + BFS + FlyAsh)</div>
+      <div class="code-block"><pre><span class="comment"># Cement + BFS + FlyAsh = total binder content</span>
+df[<span class="str">"WB_ratio"</span>] = df[<span class="str">"Water"</span>] / (df[<span class="str">"Cement"</span>] + df[<span class="str">"BFS"</span>] + df[<span class="str">"FlyAsh"</span>])</pre></div>
+      <div class="why-box">
+        <div class="label">Why This Step?</div>
+        <p>Abrams' Law (1919) states that concrete strength is inversely proportional to the w/c ratio. By encoding this as a feature, we give every model direct access to the physically meaningful ratio.</p>
+      </div>
+    </section>
+
+    <section class="section" id="step7">
+      <div class="section-header">
+        <span class="step-badge">Step 07</span>
+        <h2>Train / Test Split — 80:20</h2>
+      </div>
+      <p>The clean 2,891-sample dataset was split into training (80%) and test (20%) sets using a fixed random seed. This is performed <strong>before</strong> any feature scaling.</p>
+      <div class="compare-grid">
+        <div class="compare-wrong">
+          <h4>❌ Wrong Order</h4>
+          <ul>
+            <li>Scale ALL data → then split</li>
+            <li>Scaler sees test set statistics</li>
+            <li>Test data leaks → inflated R²</li>
+          </ul>
+        </div>
+        <div class="compare-right">
+          <h4>✅ Correct Order</h4>
+          <ul>
+            <li>Split first → then scale</li>
+            <li>Scaler sees ONLY training statistics</li>
+            <li>Genuine unseen evaluation</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="step8">
+      <div class="section-header">
+        <span class="step-badge">Step 08</span>
+        <h2>Min-Max Normalisation — No Data Leakage</h2>
+      </div>
+      <p>All 9 input features were scaled to [0, 1] using Min-Max normalisation. The scaler was fit exclusively on training data, then applied to both sets.</p>
+      <div class="code-block"><pre>scaler = MinMaxScaler()
+
+X_train = scaler.fit_transform(X_train)  <span class="comment"># fit + transform on TRAIN only</span>
+X_test  = scaler.transform(X_test)        <span class="comment"># transform ONLY — no refit</span></pre></div>
+      <div class="info-box"><strong>Why Min-Max?</strong> Min-Max preserves exact zeros in BFS, FlyAsh, and SP columns — Z-score would shift those zeros away, losing physical meaning. It also brings heavily skewed units into a standard scale for SVR.</div>
+    </section>
+
+    <section class="section" id="step9">
+      <div class="section-header">
+        <span class="step-badge">Step 09</span>
+        <h2>Train Three Machine Learning Models</h2>
+      </div>
+      <p>Three regression models representing fundamentally different learning approaches were trained on the scaled 2,312-sample training set.</p>
+      <div class="model-grid">
+        <div class="model-card">
+          <div class="card-header col-grey">
+            <h4>Linear Regression</h4>
+            <div class="role">Baseline</div>
+          </div>
+          <div class="card-body">
+            <ul>
+              <li>Interpretable coefficients</li>
+              <li>Cannot capture nonlinearity</li>
+            </ul>
+            <div class="r2-badge col-grey">R² = 0.670</div>
+          </div>
+        </div>
+        <div class="model-card">
+          <div class="card-header col-terra">
+            <h4>Random Forest ⭐</h4>
+            <div class="role">Best Model</div>
+          </div>
+          <div class="card-body">
+            <ul>
+              <li>200 bootstrap trees</li>
+              <li>Handles nonlinearity natively</li>
+            </ul>
+            <div class="r2-badge col-terra">R² = 0.942</div>
+          </div>
+        </div>
+        <div class="model-card">
+          <div class="card-header col-sage">
+            <h4>SVR — RBF Kernel</h4>
+            <div class="role">Nonlinear</div>
+          </div>
+          <div class="card-body">
+            <ul>
+              <li>C=100, γ=0.1, ε=0.1</li>
+              <li>Robust to noisy data</li>
+            </ul>
+            <div class="r2-badge col-sage">R² = 0.806</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="step10">
+      <div class="section-header">
+        <span class="step-badge">Step 10</span>
+        <h2>Evaluate &amp; Compare Model Performance</h2>
+      </div>
+      <p>Three metrics were computed on the held-out test set (579 samples) for all models.</p>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Model</th><th>R²</th><th>RMSE (MPa)</th><th>MAE (MPa)</th><th>Assessment</th></tr></thead>
+          <tbody>
+            <tr><td>Linear Regression</td><td>0.6703</td><td>9.4206</td><td>7.2726</td><td class="left">Weak — systematic error at extremes</td></tr>
+            <tr class="highlight"><td>Random Forest ⭐ BEST</td><td>0.9420</td><td>3.9502</td><td>2.6369</td><td class="left">Excellent — recommended for deployment</td></tr>
+            <tr><td>SVR (RBF)</td><td>0.8056</td><td>7.2335</td><td>5.3919</td><td class="left">Good — underestimates strength > 65 MPa</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="result-box">
+        <div class="label">Result from Your Data</div>
+        <p>Random Forest R² = 0.942 — explains 94.2% of variance. RMSE = 3.95 MPa is only 11% of mean strength (35.78 MPa).</p>
+      </div>
+    </section>
+
+    <section class="section" id="step11">
+      <div class="section-header">
+        <span class="step-badge">Step 11</span>
+        <h2>Feature Importance &amp; Residual Analysis</h2>
+      </div>
+      <p>Gini-based feature importance validates that the model learned physics, not spurious patterns.</p>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Rank</th><th>Feature</th><th>Importance</th><th>Physical Explanation</th></tr></thead>
+          <tbody>
+            <tr class="highlight"><td>1</td><td>WB_ratio (engineered)</td><td>43.9%</td><td class="left">Abrams' Law: strength ∝ 1/(w/b). Top predictor.</td></tr>
+            <tr class="highlight"><td>2</td><td>Age (days)</td><td>34.9%</td><td class="left">Logarithmic strength gain with curing time.</td></tr>
+            <tr><td>3</td><td>Cement (kg/m³)</td><td>8.3%</td><td class="left">More cement = more C-S-H gel.</td></tr>
+            <tr><td>4</td><td>Fly Ash</td><td>2.7%</td><td class="left">Pozzolanic reaction — slow, long-term strength.</td></tr>
+            <tr><td>5</td><td>Coarse Aggregate</td><td>2.5%</td><td class="left">Affects load-bearing skeleton and ITZ properties.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section" id="step12">
+      <div class="section-header">
+        <span class="step-badge">Step 12</span>
+        <h2>Predict Strength of a New Concrete Sample</h2>
+      </div>
+      <p>A new mix design was defined, W/B computed, scaled with the existing scaler, and tested.</p>
+      <div class="code-block"><pre>new_sample = [300.0, 142.5, 0.0, 228.0, 0.0, 932.0, 594.0, 270.0]
+
+<span class="comment"># Compute W/B ratio with the SAME formula</span>
+wb = 228.0 / (300.0 + 142.5 + 0.0)   <span class="comment"># = 0.5133</span>
+new_sample.append(wb)
+
+new_scaled = scaler.transform([new_sample])
+<span class="kw">print</span>(f<span class="str">"Random Forest Predicts : {rf.predict(new_scaled)[0]:.2f} MPa"</span>)</pre></div>
+    </section>
+
+    <section class="section" id="conclusions">
+      <div class="section-header">
+        <span class="step-badge final">★ Final</span>
+        <h2>Overall Conclusions &amp; Key Takeaways</h2>
+      </div>
+      
+      <div class="conc-grid">
+        <div class="conc-card">
+          <div class="num">01</div>
+          <h4>Nonlinearity is Real and Significant</h4>
+          <p>The 40% R² gap between Linear Regression (0.67) and Random Forest (0.94) proves that concrete strength cannot be reliably predicted linearly.</p>
+        </div>
+        <div class="conc-card">
+          <div class="num">02</div>
+          <h4>Abrams' Law Validated by ML</h4>
+          <p>WB_ratio at 43.9% importance directly confirms the 1919 empirical law. Physics-informed feature engineering is highly powerful.</p>
+        </div>
+        <div class="conc-card">
+          <div class="num">03</div>
+          <h4>Curing Time is Critical</h4>
+          <p>Age at 34.9% importance confirms the logarithmic strength-gain law. Any ML model trained without age data would give unreliable predictions.</p>
+        </div>
+        <div class="conc-card">
+          <div class="num">04</div>
+          <h4>The Pipeline is Production-Ready</h4>
+          <p>RMSE = 3.95 MPa on unseen data is within engineering tolerance for mix design optimisation.</p>
+        </div>
+      </div>
+
+      <h3>Bug Fixes Applied to Original Notebook</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Issue in Original Code</th><th>Severity</th><th>Fix Applied</th></tr></thead>
+          <tbody>
+            <tr class="fix-crit"><td>Scaler fit before split</td><td>🔴 Critical</td><td class="left">Split first, then fit_transform on train only</td></tr>
+            <tr class="fix-crit"><td>No missing value handling</td><td>🔴 Critical</td><td class="left">fillna(median) added</td></tr>
+            <tr class="fix-crit"><td>No duplicate removal</td><td>🔴 Critical</td><td class="left">drop_duplicates() — 25 rows removed</td></tr>
+            <tr class="fix-crit"><td>No outlier removal</td><td>🔴 Critical</td><td class="left">Z-score > 3.5 filter — 114 rows removed</td></tr>
+            <tr class="fix-imp"><td>No W/B ratio feature</td><td>🟡 Important</td><td class="left">WB_ratio added → became top feature (43.9%)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>References</h3>
+      <ol style="color: var(--ink2); font-size: 12px; padding-left: 20px; line-height: 1.8;">
+        <li>I.-C. Yeh, "Modeling of strength of high-performance concrete using ANNs," <em>Cement and Concrete Research</em>, 1998.</li>
+        <li>K. Yan &amp; C. Shi, "Prediction of concrete compressive strength using SVR," <em>Advances in Structural Engineering</em>, 2003.</li>
+        <li>T. Chen &amp; C. Guestrin, "XGBoost: A scalable tree boosting system," <em>ACM KDD</em>, 2016.</li>
+        <li>Abrams, D.A. (1919). <em>Design of Concrete Mixtures</em>. Structural Materials Research Laboratory.</li>
+      </ol>
+    </section>
+
+    <footer>
+      <p><strong>Kartik Singh</strong> &nbsp;·&nbsp; ME644 – Computational Methods in Engineering &nbsp;·&nbsp; Civil Engineering, IIT Kanpur &nbsp;·&nbsp; April 2026</p>
+      <p style="margin-top: 5px;">Prediction of Concrete Compressive Strength Using Machine Learning &nbsp;·&nbsp; Random Forest R² = 0.942</p>
+    </footer>
+
+  </div>
+
+</body>
+</html>
